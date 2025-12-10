@@ -1,0 +1,8 @@
+# Dépendances principales pour exécuter les scripts d'entraînement et de génération
+# Pour CUDA, installez la version de torch correspondant à votre GPU depuis https://pytorch.org/
+torch
+torchvision
+numpy
+Pillow
+matplotlib
+tqdm
