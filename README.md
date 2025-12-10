@@ -1,92 +1,111 @@
-# Quick Diffusion — README
+# Génération d'images par modèle de diffusion
 
-Ce dépôt contient un script Python simple et autonome (`main.py`) implémentant un petit modèle de diffusion (U-Net simplifié) pour entraîner et générer des images à partir d'un dataset local de type CelebA.
+Ce dépôt contient un prototype de modèle de diffusion et des scripts pour entraîner et produire des images (inpainting / génération conditionnelle simple) à partir d'un dataset local (ex. CelebA).
 
-## 🎯 Objectif
+L'objectif du projet : expérimenter une version simple d'un diffusion model (U-Net temporel) pour comprendre la chaîne complète — préparation des données, entraînement, sauvegarde de checkpoints et génération d'images de démonstration.
 
-Documenter `main.py` :
-- comment préparer les données localement ;
-- quelles sont les dépendances ;
-- comment lancer l'entraînement ;
-- où retrouver les sorties (checkpoints & images prévisualisées).
+**Langue** : français
 
-## 🧭 Résumé de `main.py`
+## Contenu principal
 
-- Le script crée un dataset local (`LocalCelebADataset`) qui cherche récursivement des images `.jpg` (ou `.png` si none found) dans le dossier `data/`.
-- Un modèle simple de type U-Net temporel (`QuickDiffusionUNet`) est défini avec un bloc temporel (`TimeBlock`) pour injecter l'embedding du pas temporel.
-- L'entraînement ajoute progressivement du bruit aux images (fonction `forward_noise`) et apprend à prédire un niveau de bruit suivant pour chaque pas.
-- Pendant l'entraînement, des checkpoints sont sauvegardés dans `checkpoints/` et une prévisualisation globale est sauvegardée dans `results/` (images d'exemple par époque).
-- Le script détecte automatiquement l'appareil : GPU CUDA, MPS (Mac M1/M2/M3) ou CPU.
+- `main.py` — script principal pour entraîner le modèle et sauvegarder checkpoints + images de prévisualisation.
+- `inpainting.py` — script/utilitaire pour exécuter des tâches d'inpainting (si présent dans le dépôt).
+- `data/` — dossier attendu contenant les images d'entraînement (ex. `img_align_celeba/`).
+- `checkpoints/` — dossiers de sauvegarde des modèles (fichiers `.pth`).
+- `results/` — images de sortie (grilles d'exemples générées pendant/à la fin des époques).
 
-## ⚙️ Hyperparamètres et options (définis en haut de `main.py`)
-- IMG_SIZE = 64 — taille (H×W) des images trainées
-- BATCH_SIZE = 64
-- TIMESTEPS = 16 — nombre de pas de diffusion
-- LR = 1e-4 — learning rate
-- EPOCHS = 10
+## Ce que fait le code
 
-Ces variables peuvent être modifiées directement dans `main.py` pour expérimenter.
+- Prépare un dataset local en recherchant des images dans `data/`.
+- Définit un petit U-Net temporel qui reçoit l'embedding du pas de diffusion.
+- Entraîne le modèle à prédire le bruit ajouté à une image (schéma de diffusion simplifié).
+- Sauvegarde périodiquement les checkpoints dans `checkpoints/` et des images d'exemple dans `results/`.
 
-## 📁 Structure attendue du projet
+## Structure du projet
 
-- data/  <-- placez vos images ici (ex: `img_align_celeba/`)
-- checkpoints/  <-- créé automatiquement par le script (sauvegarde `.pth`)
-- results/  <-- créé automatiquement (sauvegarde `epoch_N.png`)
+- `data/` — placez votre dataset ici (structure récursive acceptée).
+- `checkpoints/` — créé automatiquement par le script.
+- `results/` — créé automatiquement par le script.
 
-Remarque : Evitez d'ajouter `data/`, `*.pth` ou `results/` au dépôt Git — `.gitignore` a été ajouté pour ces fichiers.
+Ne commitez pas vos datasets ou checkpoints volumineux dans Git. Utilisez `.gitignore` (déjà présent) et, si besoin, Git LFS pour les fichiers `.pth`.
 
-## ✅ Dépendances
+## Dépendances
 
-Le script utilise (extrait depuis `main.py`):
-- Python 3.8+ (recommandé)
-- torch
-- torchvision
-- numpy
-- pillow (PIL)
-- matplotlib
-- tqdm
+Recommandé : Python 3.8+.
 
-Exemple d'installation :
+Bibliothèques principales :
+
+- `torch` (PyTorch)
+- `torchvision`
+- `numpy`
+- `Pillow`
+- `matplotlib`
+- `tqdm`
+
+Exemple d'installation (Windows PowerShell) :
 
 ```powershell
+python -m pip install --upgrade pip
 pip install torch torchvision numpy pillow matplotlib tqdm
 ```
 
-Si vous utilisez un GPU, installez la version de `torch` compatible avec votre CUDA.
+Pour utiliser CUDA, installez la version de `torch` compatible avec votre version de CUDA (voir https://pytorch.org/).
 
-## 🚀 Comment lancer l'entraînement
+## Exécution
 
-1. Mettez vos images dans le dossier `data/` (ou un sous-dossier : script cherche récursivement `*.jpg` / `*.png`).
-2. (Optionnel) ajustez les hyperparamètres en tête de `main.py`.
-3. Exécutez :
+1. Placez vos images dans `data/` (le script recherche récursivement `*.jpg` / `*.png`).
+2. (Optionnel) modifiez les hyperparamètres directement dans `main.py` (taille d'image, batch, timesteps, epochs, etc.).
+3. Lancez l'entraînement :
 
 ```powershell
 python main.py
 ```
 
-Remarques :
-- Sur Windows, `DataLoader` utilise `num_workers=0` pour éviter des erreurs de multiprocessing. Sur Linux/Mac vous pouvez augmenter `num_workers`.
-- Si vous sentez des problèmes de mémoire, réduisez `BATCH_SIZE` ou `IMG_SIZE`.
+Notes :
+- Sur Windows, `DataLoader` peut être configuré avec `num_workers=0` pour éviter des soucis de multiprocessing.
+- Si vous manquez de mémoire GPU/CPU, diminuez `BATCH_SIZE` ou `IMG_SIZE`.
 
-## 💾 Sorties / Checkpoints
+## Génération / Inpainting
 
-- `checkpoints/model_ep{N}.pth` — états du modèle enregistrés après chaque époque
-- `results/epoch_{N}.png` — grille d'images générées en fin d'époque (prévisualisation)
+Si `inpainting.py` est fourni, il offre des utilitaires pour lancer de l'inpainting en chargeant un checkpoint existant depuis `checkpoints/`. Exemple d'usage (varie selon l'implémentation) :
 
-## 📌 Astuces et suggestions
+```powershell
+python inpainting.py --checkpoint checkpoints/model_ep200.pth --input examples/masked.png --output results/inpainted.png
+```
 
-- Les modèles et datasets peuvent être volumineux : si vous souhaitez suivre les `.pth` dans Git, configurez Git LFS (`git lfs track "*.pth"`) pour éviter d'avoir de gros fichiers git historiques.
-- Si vous avez accidentellement committé de gros fichiers, je peux vous aider à les supprimer de l'historique (avec `git filter-repo` ou `bfg`).
+Consultez l'entête des scripts pour les options disponibles.
 
-## ❓ Prochaine étape — amélioration possible
+## Sorties
 
-- Ajouter un fichier `requirements.txt` pour simplifier l'installation.
-- Ajouter des scripts CLI pour configurer hyperparamètres via des flags.
-- Ajouter un petit notebook pour visualiser les images générées et l'évolution du training.
+- `checkpoints/model_ep{N}.pth` — états du modèle sauvegardés par époque.
+- `results/epoch_{N}.png` — images d'exemple générées pour visualiser la progression de l'entraînement.
+
+## Bonnes pratiques Git
+
+- Ne versionnez pas `data/` ni de gros fichiers de checkpoints.
+- Pour suivre les checkpoints volumineux, utilisez Git LFS :
+
+```powershell
+git lfs install
+git lfs track "*.pth"
+git add .gitattributes
+```
+
+Si vous avez déjà committé de gros fichiers, on peut nettoyer l'historique sur demande.
+
+## Suggestions d'amélioration
+
+- Ajouter un `requirements.txt` et/ou `environment.yml`.
+- Ajouter des notebooks d'analyse et d'évaluation.
+- Ajouter des scripts CLI pour entraînement/génération indépendants.
+
+## Contact / Aide
+
+Si tu souhaites, je peux :
+- ajouter un `requirements.txt` ;
+- configurer Git LFS pour les `.pth` ;
+- committer et pousser ce README vers GitHub (je peux le faire maintenant).
 
 ---
 
-Si tu veux, je peux maintenant :
-- ajouter `requirements.txt`,
-- configurer Git LFS pour les `.pth`,
-- ou commit & push ce `README.md` sur ton repo (je peux faire ça tout de suite).
+Merci — dis-moi si tu veux que j'ajoute aussi `requirements.txt` ou que je pousse ce changement sur GitHub maintenant.
